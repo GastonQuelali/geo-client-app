@@ -1,16 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { AppNavigator } from './src/navigation/AppNavigator';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useAppInit } from './src/hooks/useAppInit';
 
+const MAP_SLUG = 'mapa-base-movil';
+
 export default function App() {
-  const { isLoading, error, maps, retry } = useAppInit();
+  const { isLoading, error, htmlContent, retry } = useAppInit(MAP_SLUG);
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Cargando...</Text>
+        <ActivityIndicator size="large" color="#2E7D32" />
+        <Text style={styles.text}>Cargando mapa...</Text>
       </View>
     );
   }
@@ -27,10 +29,32 @@ export default function App() {
     );
   }
 
+  if (!htmlContent) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Servicio no disponible</Text>
+        <Text style={styles.message}>No hay contenido para mostrar</Text>
+        <TouchableOpacity style={styles.button} onPress={retry}>
+          <Text style={styles.buttonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <NavigationContainer>
-      <AppNavigator maps={maps} />
-    </NavigationContainer>
+    <View style={styles.webviewContainer}>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html: htmlContent }}
+        style={styles.webview}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        allowFileAccess={true}
+        allowFileAccessFromFileURLs={true}
+        allowUniversalAccessFromFileURLs={true}
+        mixedContentMode="always"
+      />
+    </View>
   );
 }
 
@@ -40,15 +64,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#fff',
+  },
+  webviewContainer: {
+    flex: 1,
+  },
+  webview: {
+    flex: 1,
   },
   text: {
     fontSize: 16,
+    marginTop: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#D32F2F',
     marginBottom: 10,
+    textAlign: 'center',
   },
   message: {
     fontSize: 14,

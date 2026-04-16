@@ -1,60 +1,51 @@
 import { useState, useEffect } from 'react';
-import * as Network from 'expo-network';
-import { apiService } from '../services/api';
-import { MapItem } from '../types';
+import { apiService, PublicMapResponse } from '../services/api';
 
 interface UseAppInitResult {
   isLoading: boolean;
   error: string | null;
-  appSessionToken: string | null;
-  maps: MapItem[];
+  htmlContent: string | null;
+  mapSettings: PublicMapResponse['map_settings'] | null;
+  layers: PublicMapResponse['layers'] | null;
   retry: () => void;
 }
 
-export const useAppInit = (): UseAppInitResult => {
+export const useAppInit = (slug: string): UseAppInitResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [appSessionToken, setAppSessionToken] = useState<string | null>(null);
-  const [maps, setMaps] = useState<MapItem[]>([]);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [mapSettings, setMapSettings] = useState<PublicMapResponse['map_settings'] | null>(null);
+  const [layers, setLayers] = useState<PublicMapResponse['layers'] | null>(null);
 
-  const initApp = async () => {
+  const loadMap = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiService.initApp();
+      const response = await apiService.getPublicMap(slug);
       
-      setAppSessionToken(response.app_session_token);
-      setMaps(response.maps);
-      await apiService.saveMaps(response.maps);
+      setHtmlContent(response.html_contenido);
+      setMapSettings(response.map_settings);
+      setLayers(response.layers);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
-      console.error('App init error:', err);
-      setMaps([{ slug: 'offline', name: 'Modo Offline' }]);
+      console.error('Map load error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    initApp();
-  }, []);
+    loadMap();
+  }, [slug]);
 
   return {
     isLoading,
     error,
-    appSessionToken,
-    maps,
-    retry: initApp,
+    htmlContent,
+    mapSettings,
+    layers,
+    retry: loadMap,
   };
-};
-
-export const getLocalIpAddress = async (): Promise<string> => {
-  try {
-    const ipAddress = await Network.getIpAddressAsync();
-    return ipAddress;
-  } catch {
-    return 'localhost';
-  }
 };
