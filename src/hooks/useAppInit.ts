@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { apiService, PublicMapResponse } from '../services/api';
+import { apiService } from '../services/api';
 
 interface UseAppInitResult {
   isLoading: boolean;
   error: string | null;
   htmlContent: string | null;
-  mapSettings: PublicMapResponse['map_settings'] | null;
-  layers: PublicMapResponse['layers'] | null;
   retry: () => void;
 }
 
@@ -14,8 +12,6 @@ export const useAppInit = (slug: string): UseAppInitResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
-  const [mapSettings, setMapSettings] = useState<PublicMapResponse['map_settings'] | null>(null);
-  const [layers, setLayers] = useState<PublicMapResponse['layers'] | null>(null);
 
   const loadMap = async () => {
     try {
@@ -23,10 +19,7 @@ export const useAppInit = (slug: string): UseAppInitResult => {
       setError(null);
 
       const response = await apiService.getPublicMap(slug);
-      
       setHtmlContent(response.html_contenido);
-      setMapSettings(response.map_settings);
-      setLayers(response.layers);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
@@ -44,8 +37,6 @@ export const useAppInit = (slug: string): UseAppInitResult => {
     isLoading,
     error,
     htmlContent,
-    mapSettings,
-    layers,
     retry: loadMap,
   };
 };

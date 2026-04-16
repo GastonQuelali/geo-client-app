@@ -4,27 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 const SERVER_HOST = 'localhost';
 const SERVER_PORT = '8000';
 
-interface MapSettings {
-  lat: number;
-  lng: number;
-  zoom: number;
-}
-
-interface Layer {
-  id: number;
-  nombre: string;
-  url_servicio: string;
-  tipo: string;
-  publica: boolean;
-  visible: boolean;
-  opacidad: number;
-  config: Record<string, unknown>;
-}
-
 export interface PublicMapResponse {
   html_contenido: string | null;
-  map_settings: MapSettings;
-  layers: Layer[];
 }
 
 interface GuestTokenResponse {
