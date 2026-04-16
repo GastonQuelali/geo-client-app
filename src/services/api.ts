@@ -1,60 +1,81 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_CONFIG, ENDPOINTS } from '../constants/config';
-import { InitResponse, HtmlResponse, MapItem } from '../types';
-import { getLocalIpAddress } from '../hooks/useAppInit';
+
+const SERVER_HOST = 'localhost';
+const SERVER_PORT = '8000';
+
+interface MapSettings {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
+interface Layer {
+  id: number;
+  nombre: string;
+  url_servicio: string;
+  tipo: string;
+  publica: boolean;
+  visible: boolean;
+  opacidad: number;
+  config: Record<string, unknown>;
+}
+
+export interface PublicMapResponse {
+  html_contenido: string | null;
+  map_settings: MapSettings;
+  layers: Layer[];
+}
+
+interface GuestTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
 
 class ApiService {
-  private baseUrl: string = 'http://localhost:8000';
+  private baseUrl: string = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
-  private async updateBaseUrl() {
-    const localIp = await getLocalIpAddress();
-    this.baseUrl = `http://${localIp}:8000`;
+  async getGuestToken(): Promise<string> {
+    const storedToken = await SecureStore.getItemAsync('guest_token');
+    if (storedToken) {
+      return storedToken;
+    }
+
+    const response = await axios.post<GuestTokenResponse>(
+      `${this.baseUrl}/api/v1/auth/guest-token`
+    );
+    const token = response.data.access_token;
+    await SecureStore.setItemAsync('guest_token', token);
+    return token;
   }
 
-  async initApp(): Promise<InitResponse> {
-    await this.updateBaseUrl();
-    
+  async getPublicMap(slug: string): Promise<PublicMapResponse> {
     try {
-      const response = await axios.post<InitResponse>(`${this.baseUrl}${ENDPOINTS.MAP_INIT}`, {
-        app_id: API_CONFIG.APP_ID,
-      });
-      return response.data as InitResponse;
-    } catch (err: any) {
-      if (err.response) {
-        throw new Error(`Error del servidor: ${err.response.status}`);
+      const token = await this.getGuestToken();
+      
+      const response = await axios.get<PublicMapResponse>(
+        `${this.baseUrl}/api/v1/map/public-map/${slug}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status: number }; message?: string };
+      if (axiosErr.response?.status === 403) {
+        throw new Error('Servicio no disponible en este momento');
+      }
+      if (axiosErr.response?.status === 404) {
+        throw new Error('Mapa no encontrado');
+      }
+      if (axiosErr.response?.status) {
+        throw new Error(`Error del servidor: ${axiosErr.response.status}`);
       }
       throw new Error('Backend no disponible. Asegúrate de que el servidor esté corriendo en la misma red.');
     }
-  }
-
-  async getMapHtml(slug: string): Promise<HtmlResponse> {
-    try {
-      await this.updateBaseUrl();
-      const token = await SecureStore.getItemAsync('app_session_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      
-      const response = await axios.get<HtmlResponse>(`${this.baseUrl}${ENDPOINTS.MAP_HTML(slug)}`, { headers });
-      return response.data as HtmlResponse;
-    } catch (err: any) {
-      if (err.response) {
-        throw new Error(`Error: ${err.response.status}`);
-      }
-      throw new Error('Backend no disponible');
-    }
-  }
-
-  async getSessionToken(): Promise<string | null> {
-    return SecureStore.getItemAsync('app_session_token');
-  }
-
-  async getMaps(): Promise<MapItem[]> {
-    const maps = await SecureStore.getItemAsync('maps');
-    return maps ? JSON.parse(maps) : [];
-  }
-
-  async saveMaps(maps: MapItem[]): Promise<void> {
-    await SecureStore.setItemAsync('maps', JSON.stringify(maps));
   }
 }
 
