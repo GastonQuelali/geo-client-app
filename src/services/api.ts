@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const SERVER_HOST = 'localhost';
+const SERVER_HOST = '10.0.0.170';
 const SERVER_PORT = '8000';
 
 export interface PublicMapResponse {
