@@ -6,9 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,52 +16,47 @@
       "bundleIdentifier": "com.geoclient.app",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSExceptionDomains": {
-            "192.168.105.218": {
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSIncludesSubdomains": true
-            },
-            "192.168.105.219": {
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSIncludesSubdomains": true
-            },
-            "localhost": {
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSIncludesSubdomains": true
-            }
-          }
+          "NSAllowsArbitraryLoads": true
         }
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1E88E5"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.geoclient.app",
-      "permissions": [
-        "android.permission.INTERNET"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-router",
       [
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
-            "networkSecurityConfig": true
+            "usesCleartextTraffic": true
           },
           "ios": {
             "usesCleartextTraffic": true
           }
         }
       ]
-    ]
+    ],
+    "scheme": "geo-client-app",
+    "extra": {
+      "eas": {
+        "projectId": "a73e63ac-77b1-4ec0-bdd8-ac2c4aedfe84"
+      }
+    },
+    "owner": "gaston1980",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a73e63ac-77b1-4ec0-bdd8-ac2c4aedfe84"
+    }
   }
 }
