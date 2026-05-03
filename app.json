@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/marca-gestion-vertical.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f7f9fb"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,

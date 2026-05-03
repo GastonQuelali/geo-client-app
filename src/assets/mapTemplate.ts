@@ -1,6 +1,4 @@
 export const getMapHTML = (serverIP: string): string => {
-  const ARCGIS_BASE = `http://${serverIP}:6080/arcgis/rest/services`;
-
   return `<html>
   <head>
     <meta charset="utf-8" />
@@ -11,40 +9,27 @@ export const getMapHTML = (serverIP: string): string => {
     <title>Dirección de Administración Geográfica y Catastro</title>
     <style>
       html,
-      body,
-      #viewDiv {
-        padding:0;
-        margin:0;
+      body {
+        padding: 0;
+        margin: 0;
         height: 100%;
         width: 100%;
       }
 
-      .esri-coordinate-conversion__conversions-view {
-        margin: 0 0 0 0 !important;
+      #appContainer {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
       }
 
-      .esri-attribution {
-        line-height: 25px !important;
+      #viewDiv {
+        flex: 1;
+        width: 100%;
       }
 
-      #resultDiv {
-        min-width: 250px;
-        font-size: 14px;
-        padding: 10px;
-        display: none;
-        overflow-y: auto;
-        overflow-x: hidden;
-      }
-
-      #messageDiv {
-        display: none;
-        padding-top: 10px;
-      }
-
-      #infoDiv {
-        position: absolute;
-        top: 15px;
-        left: 60px;
+      .esri-view-height-small .esri-expand .esri-widget--panel-height-only {
+        max-height: 100% !important;
       }
 
     </style>
@@ -99,6 +84,8 @@ export const getMapHTML = (serverIP: string): string => {
       ) {
         /* =========================================
          SECCIÓN 1: TEMPLATES DE POPUP
+         - templatePredios, templateManzanas, templateVias, etc.
+         - Definición de contenido para ventanas emergentes
       =========================================== */
         var templatePredios = {
           title: "PREDIOS",
@@ -178,8 +165,9 @@ export const getMapHTML = (serverIP: string): string => {
 
         /* =========================================
          CONFIGURACIÓN DE SERVICIOS
+         - URLs centralizadas para fácil modificación
       ========================================== */
-        var ARCGIS_BASE = "${ARCGIS_BASE}";
+        var ARCGIS_BASE = "http://${serverIP}:6080/arcgis/rest/services";
 
         var SERVICES = {
           PREDIO: ARCGIS_BASE + "/catastro/predios_cba/MapServer",
@@ -193,6 +181,7 @@ export const getMapHTML = (serverIP: string): string => {
           MATRICES: ARCGIS_BASE + "/catastro/matrices_predios/MapServer",
           RED: ARCGIS_BASE + "/catastro/redGeodesica/MapServer",
           OTBS: ARCGIS_BASE + "/planificacion/OTBS/MapServer",
+          // Imágenes base (años)
           IMG_2015: ARCGIS_BASE + "/imagenes/imagen2015_500/MapServer",
           IMG_2016: ARCGIS_BASE + "/imagenes/CBBA_2016_500/MapServer",
           IMG_2017: ARCGIS_BASE + "/imagenes/imagen2017_500/MapServer",
@@ -205,7 +194,9 @@ export const getMapHTML = (serverIP: string): string => {
         var sCopyright = "GRS 80 - MARGEN SIRGAS(WGS 84)";
 
         /* =========================================
-         CAPAS OPERACIONALES
+         SECCIÓN 2: CAPAS OPERACIONALES
+         - Capas de catastro, planificación, etc.
+         - MapImageLayer para servicios locales
       ========================================== */
         var prediosLayer = new MapImageLayer({
           url: SERVICES.PREDIO,
@@ -295,6 +286,43 @@ export const getMapHTML = (serverIP: string): string => {
           title: "OTBS",
         });
 
+        var sCopyright = "GRS 80 - MARGEN SIRGAS(WGS 84)";
+
+        /* ==========================================
+         SECCIÓN 3: MAPAS BASE (AÑOS)
+         - Configuración de imágenes satelitales
+         - Años 2015-2023
+      ========================================== */
+        var baseMapYears = [
+          "2015",
+          "2016",
+          "2017",
+          "2018",
+          "2019",
+          "2022",
+          "2023",
+        ];
+        var baseMaps = baseMapYears.map(function (year) {
+          var url = SERVICES["IMG_" + year];
+          var layer = new TileLayer({
+            url: url,
+            visible: true,
+            title: "Imagen " + year,
+            copyright: sCopyright,
+            opacity: 1.0,
+          });
+          return new Basemap({
+            baseLayers: [layer],
+            title: year,
+            id: year,
+            thumbnailUrl: url + "/info/thumbnail",
+          });
+        });
+
+        /* ==========================================
+         SECCIÓN 4: INICIALIZACIÓN DEL MAPA
+         - MapView, extent, eventos
+      ========================================== */
         var sectorialesLayer = new MapImageLayer({
           url: SERVICES.SECTORIALES,
           visible: true,
@@ -320,25 +348,11 @@ export const getMapHTML = (serverIP: string): string => {
           title: "Registros Catastrales",
         });
 
-        var viasLayer2 = new MapImageLayer({
-          url: SERVICES.VIAS,
-          visible: true,
-          title: "Vias",
-          sublayers: [
-            {
-              id: 0,
-              visible: true,
-              title: "Vias",
-              popupTemplate: templateVias,
-            },
-          ],
-        });
-
         var map = new Map({
           layers: [
             sectorialesLayer,
             usoSueloLayer,
-            viasLayer2,
+            viasLayer,
             registrosCatastralesLayer,
             prediosLayer,
             manzanasLayer,
@@ -383,36 +397,12 @@ export const getMapHTML = (serverIP: string): string => {
           });
 
           /* ==========================================
-           WIDGETS Y UI
+           SECCIÓN 5: WIDGETS Y UI
+           - Search, Legend, LayerList, Bookmarks, etc.
           ========================================== */
-          var baseMapYears = [
-            "2015",
-            "2016",
-            "2017",
-            "2018",
-            "2019",
-            "2022",
-            "2023",
-          ];
-          var baseMaps = baseMapYears.map(function (year) {
-            var url = SERVICES["IMG_" + year];
-            var layer = new TileLayer({
-              url: url,
-              visible: true,
-              title: "Imagen " + year,
-              copyright: sCopyright,
-              opacity: 1.0,
-            });
-            return new Basemap({
-              baseLayers: [layer],
-              title: year,
-              id: year,
-              thumbnailUrl: url + "/info/thumbnail",
-            });
-          });
-
           var basemapGallery = new BasemapGallery({
             view: view,
+            //activeBasemap: baseMaps[4], // 2019 por defecto (índice 4)
             source: baseMaps,
           });
 
@@ -422,10 +412,14 @@ export const getMapHTML = (serverIP: string): string => {
             content: basemapGallery,
             expanded: false,
             expandTooltip: "Galeria de Fotos Areas o Imagenes Satelitales",
-            mode: "drawer",
+            mode: "drawer", //"floating"|"drawer"
           });
-          view.ui.add(bmExpand, "top-left");
 
+          /* =========================================
+           LIMPIAR MAPA BASE
+           - Al hacer clic en #infoDiv, desactiva el basemap activo
+           - Esto permite volver a ver las capas operacionales sin basemap
+          ========================================== */
           document
             .getElementById("infoDiv")
             .addEventListener("click", clearBasemap);
@@ -433,25 +427,14 @@ export const getMapHTML = (serverIP: string): string => {
             basemapGallery.activeBasemap = null;
           }
 
-          var applicationDiv = document.getElementById("applicationDiv");
-
-          view.ui.add(
-            new Home({
-              view: view,
-            }),
-            "top-left",
-          );
-
-          view.ui.add(
-            new Fullscreen({
-              view: view,
-              element: applicationDiv,
-            }),
-            "top-left",
-          );
+          document
+            .getElementById("reloadDiv")
+            .addEventListener("click", function (ev) {
+              location.reload(true); // true = hard reload (bypass cache)
+            });
 
           var layerList = new LayerList({
-            view: view,
+            view: view, //,
           });
           const llExpand = new Expand({
             view: view,
@@ -459,31 +442,35 @@ export const getMapHTML = (serverIP: string): string => {
             autoCollapse: true,
             expanded: false,
           });
-          view.ui.add(llExpand, "top-left");
 
           var featureLayerPredios = new FeatureLayer({
-            url: SERVICES.PREDIO,
+            url: SERVICES.PREDIO + "/0",
             outFields: ["*"],
             popupTemplate: templatePredios,
           });
 
           var featureLayerManzanas = new FeatureLayer({
-            url: SERVICES.MANZANA,
+            url: SERVICES.MANZANA + "/0",
             outFields: ["*"],
             popupTemplate: templateManzanas,
           });
 
           var featureLayerVias = new FeatureLayer({
-            url: SERVICES.VIAS,
+            url: SERVICES.VIAS + "/0",
             outFields: ["*"],
             popupTemplate: templateVias,
           });
 
+          /* =========================================
+            SECCIÓN 6: BÚSQUEDA Y LEYENDA
+            - Search Widget para buscar predios, manzanas y vías
+            - Legend para mostrar simbología de capas
+          ========================================== */
           var searchWidget = new Search({
             view: view,
             resultGraphicEnabled: true,
             locationEnabled: true,
-            autoNavigate: false,
+            autoNavigate: false, //para que no vaya al punto
             includeDefaultSources: false,
             allPlaceholder: "Codigo Catastral o Nro. Manzana",
             sources: [
@@ -523,6 +510,12 @@ export const getMapHTML = (serverIP: string): string => {
           });
 
           searchWidget.on("select-result", function (event) {
+            console.log("The selected search result: ", event);
+            console.log("The selected search result view: ", view);
+            console.log(
+              "The selected search result feature: ",
+              event.result.feature.geometry.extent,
+            );
             view.goTo(event.result.feature.geometry.extent);
           });
 
@@ -531,20 +524,34 @@ export const getMapHTML = (serverIP: string): string => {
             content: searchWidget,
             expanded: false,
           });
-          view.ui.add(sExpand, "top-right");
 
+          //LEGEND
           const legend = new Expand({
             content: new Legend({
               view: view,
               style: "card",
               layerInfos: [
-                { layer: sectorialesLayer },
-                { layer: usoSueloLayer },
-                { layer: viasLayer },
-                { layer: registrosCatastralesLayer },
-                { layer: prediosLayer },
-                { layer: manzanasLayer },
-                { layer: limitesLayer },
+                {
+                  layer: sectorialesLayer,
+                },
+                {
+                  layer: usoSueloLayer,
+                },
+                {
+                  layer: viasLayer,
+                },
+                {
+                  layer: registrosCatastralesLayer,
+                },
+                {
+                  layer: prediosLayer,
+                },
+                {
+                  layer: manzanasLayer,
+                },
+                {
+                  layer: limitesLayer,
+                },
               ],
             }),
             view: view,
@@ -552,24 +559,46 @@ export const getMapHTML = (serverIP: string): string => {
             expanded: false,
           });
 
+          view.ui.add(
+            new Home({
+              view: view,
+            }),
+            "top-left",
+          );
+
+          view.ui.add(bmExpand, "top-left");
+          view.ui.add(sExpand, "top-right");
+          view.ui.add(llExpand, "top-right");
           view.ui.add(legend, "bottom-right");
+          view.ui.add("infoDiv", "top-left");
+          view.ui.add("reloadDiv", "top-left");
+
         });
       });
     </script>
   </head>
 
   <body>
-    <div id="applicationDiv">
+    <div id="appContainer">
       <div id="viewDiv"></div>
-      <div
-        id="infoDiv"
-        class="esri-component esri-home esri-widget--button esri-widget"
-        role="button"
-        title="Limpiar Mapa base"
-      >
-        <span aria-hidden="true" class="esri-icon esri-icon-maps"></span>
-        <span class="esri-icon-font-fallback-text">Clean</span>
-      </div>
+    </div>
+    <div
+      id="infoDiv"
+      class="esri-component esri-widget--button esri-widget"
+      role="button"
+      title="Limpiar Mapa base"
+    >
+      <span aria-hidden="true" class="esri-icon esri-icon-maps"></span>
+      <span class="esri-icon-font-fallback-text">Clean</span>
+    </div>
+    <div
+      id="reloadDiv"
+      class="esri-component esri-widget--button esri-widget"
+      role="button"
+      title="Recargar página"
+    >
+      <span aria-hidden="true" class="esri-icon esri-icon-refresh"></span>
+      <span class="esri-icon-font-fallback-text">Reload</span>
     </div>
   </body>
 </html>`;
