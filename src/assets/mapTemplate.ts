@@ -1,4 +1,5 @@
-export const getMapHTML = (serverIP: string): string => {
+export const getMapHTML = (protocol: string, serverIP: string, port: string): string => {
+  const portSuffix = port ? `:${port}` : '';
   return `<html>
   <head>
     <meta charset="utf-8" />
@@ -30,6 +31,14 @@ export const getMapHTML = (serverIP: string): string => {
 
       .esri-view-height-small .esri-expand .esri-widget--panel-height-only {
         max-height: 100% !important;
+      }
+
+      .esri-ui-inner-container {
+        inset: 50px 15px 30px !important;
+      }
+
+      .esri-attribution {
+        display: none !important;
       }
 
     </style>
@@ -167,7 +176,7 @@ export const getMapHTML = (serverIP: string): string => {
          CONFIGURACIÓN DE SERVICIOS
          - URLs centralizadas para fácil modificación
       ========================================== */
-        var ARCGIS_BASE = "http://${serverIP}:6080/arcgis/rest/services";
+        var ARCGIS_BASE = "${protocol}://${serverIP}${portSuffix}/arcgis/rest/services";
 
         var SERVICES = {
           PREDIO: ARCGIS_BASE + "/catastro/predios_cba/MapServer",

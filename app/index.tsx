@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, ActivityIndicator, View, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useServerConfig } from '../src/hooks/useServerConfig';
 import { getMapHTML } from '../src/assets/mapTemplate';
 import { useRouter } from 'expo-router';
 
 export default function Index() {
-  const { dynamicPageEnabled, serverIP, isLoading } = useServerConfig();
+  const { dynamicPageEnabled, serverIP, protocol, port, isLoading } = useServerConfig();
   const [webViewKey, setWebViewKey] = useState(1);
   const router = useRouter();
 
@@ -17,18 +17,18 @@ export default function Index() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.webviewContainer}>
+      <View style={styles.webviewContainer}>
         <ActivityIndicator size="large" color="#2E7D32" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   const webViewSource = dynamicPageEnabled
-    ? { html: getMapHTML(serverIP) }
+    ? { html: getMapHTML(protocol, serverIP, port) }
     : require('../src/assets/mobile4.html');
 
   return (
-    <SafeAreaView style={styles.webviewContainer}>
+    <View style={styles.webviewContainer}>
       <WebView
         key={webViewKey}
         originWhitelist={['*']}
@@ -45,10 +45,11 @@ export default function Index() {
       <TouchableOpacity
         style={styles.settingsButton}
         onPress={openSettings}
+        activeOpacity={0.7}
       >
-        <Text style={styles.settingsIcon}>CFG</Text>
+        <Ionicons name="settings-outline" size={24} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -61,12 +62,12 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     position: 'absolute',
-    top: 50,
-    right: 15,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
+    bottom: Platform.OS === 'ios' ? 40 : 20,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -74,9 +75,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  settingsIcon: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
